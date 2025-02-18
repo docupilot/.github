@@ -10,7 +10,7 @@ ensuring accuracy and efficiency. Ideal for various industries, it's a game-chan
 
 ### Contribution guidelines
 
-Read [guidelines on how to contribute](./CONTRIBUTING.md)
+Read [guidelines on how to contribute](../CONTRIBUTING.md)
 
 
 ### Development Setup
