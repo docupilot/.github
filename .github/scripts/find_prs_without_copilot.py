@@ -3,11 +3,11 @@ import requests
 
 COPILOT_USERNAME = 'github-copilot[bot]'
 
-GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')
+COPILOT_PAT = os.getenv('COPILOT_PAT')
 OWNER = 'docupilot'
 
 headers = {
-    'Authorization': f'token {GITHUB_TOKEN}',
+    'Authorization': f'token {COPILOT_PAT}',
     'Accept': 'application/vnd.github+json'
 }
 

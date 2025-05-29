@@ -26,6 +26,6 @@ jobs:
 
       - name: Run script to find PRs without Copilot as reviewer
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
           REPO_LIST: ${{ github.event.inputs.repo_list }}
         run: python .github/scripts/find_prs_without_copilot.py
