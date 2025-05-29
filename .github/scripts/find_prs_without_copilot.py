@@ -42,6 +42,7 @@ def assign_copilot_as_reviewer(owner, repo, pr_number):
     url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers"
     data = {"reviewers": [COPILOT_USERNAME]}
     resp = requests.post(url, json=data, headers=headers)
+    print('resp', resp.json())
     if resp.status_code in [201, 200]:
         print(f"Assigned Copilot as reviewer to PR #{pr_number}")
     else:
