@@ -33,7 +33,8 @@ def copilot_not_a_reviewer(owner, repo, pr):
     if resp.status_code != 200:
         print(f"Failed to fetch reviewers for PR {pr['number']} in {repo}: {resp.text}")
         return True  # Assume Copilot not a reviewer if error
-    reviewers = resp.json().get('users', []) + resp.json().get('teams', [])
+    response_data = resp.json()
+    reviewers = response_data.get('users', []) + response_data.get('teams', [])
     usernames = [user['login'] for user in reviewers if isinstance(user, dict) and 'login' in user]
     return COPILOT_USERNAME not in usernames
 
