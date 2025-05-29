@@ -1,0 +1,31 @@
+name: Find PRs Without Copilot Reviewer
+
+on:
+  workflow_dispatch:
+    inputs:
+      repo_list:
+        description: 'Comma separated list of repo names within docupilot (e.g. repo1,repo2)'
+        required: true
+        type: string
+        default: appserver,docserver,accounts,docupilot-ui,accounts-ui,parser
+
+jobs:
+  find-prs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run script to find PRs without Copilot as reviewer
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_LIST: ${{ github.event.inputs.repo_list }}
+        run: python .github/scripts/find_prs_without_copilot.py
