@@ -1,7 +1,11 @@
-**Description:**
+**Title:**
 
-<!-- add your description here -->
+**Description of changes done:** (If it's API change, mention request and response structure too)
 
+
+**Potential impact areas (if any):**
+
+**Screenshots/Recordings (if any UI changes):**
 
 **Checklist:**
 - [ ] feature tested manually 👨‍🔬 🧪
@@ -15,3 +19,5 @@
 - closes #ISSUE_NUMBER1
 - closes #ISSUE_NUMBER2
 - partially addresses #ISSUE_NUMBER3
+
+**Testcase sheet link**:
