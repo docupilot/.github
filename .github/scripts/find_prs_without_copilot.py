@@ -38,6 +38,15 @@ def copilot_not_a_reviewer(owner, repo, pr):
     usernames = [user['login'] for user in reviewers if isinstance(user, dict) and 'login' in user]
     return COPILOT_USERNAME not in usernames
 
+def assign_copilot_as_reviewer(owner, repo, pr_number):
+    url = f"https://api.github.com/repos/{owner}/{repo}/pulls/{pr_number}/requested_reviewers"
+    data = {"reviewers": [COPILOT_USERNAME]}
+    resp = requests.post(url, json=data, headers=headers)
+    if resp.status_code in [201, 200]:
+        print(f"Assigned Copilot as reviewer to PR #{pr_number}")
+    else:
+        print(f"Failed to assign Copilot to PR #{pr_number}: {resp.status_code} - {resp.text}")
+
 def main():
     repos_input = os.getenv('REPO_LIST')
     if not repos_input:
@@ -55,6 +64,7 @@ def main():
         print(f"PRs without Copilot as reviewer: {len(without_copilot)}")
         for pr in without_copilot:
             print(f"#{pr['number']}: {pr['title']} - {pr['html_url']}")
+            assign_copilot_as_reviewer(OWNER, repo, pr['number'])
 
 if __name__ == '__main__':
     main()
