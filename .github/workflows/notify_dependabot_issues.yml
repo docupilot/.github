@@ -8,9 +8,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout (not used, but required for Actions)
-        uses: actions/checkout@v3
-
       - name: Fetch Dependabot alerts and notify Slack
         env:
           GH_PAT: ${{ secrets.COPILOT_PAT }}
