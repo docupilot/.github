@@ -1,7 +1,8 @@
 name: Dependabot Alerts Summary
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '30 14 * * *'
 
 jobs:
   fetch-alerts:
