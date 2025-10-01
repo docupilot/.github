@@ -1,0 +1,43 @@
+name: Dependabot Alerts Summary
+
+on:
+  schedule:
+    - cron: '30 14 * * *'
+
+jobs:
+  fetch-alerts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Fetch Dependabot alerts and notify Slack
+        env:
+          GH_PAT: ${{ secrets.COPILOT_PAT }}
+          SLACK_WEBHOOK_URL: https://hooks.slack.com/services/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
+          ORG_NAME: docupilot
+        run: |
+          echo "Fetching repos for $ORG_NAME..."
+
+          repos=$(curl -s -H "Authorization: token $GH_PAT" \
+            "https://api.github.com/orgs/$ORG_NAME/repos?per_page=100" | jq -r '.[].name')
+
+          alert_summary="*Dependabot Alerts Summary*"
+
+          for repo in $repos; do
+            alerts=$(curl -s -H "Authorization: token $GH_PAT" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$ORG_NAME/$repo/dependabot/alerts")
+
+            count=$(echo "$alerts" | jq 'length')
+
+            if [ "$count" -gt 0 ]; then
+              alert_summary="$alert_summary\n• *$repo*: $count alerts"
+            fi
+          done
+
+          if [ "$alert_summary" != "*Dependabot Alerts Summary*" ]; then
+            curl -X POST -H 'Content-type: application/json' \
+              --data "{\"text\": \"$alert_summary\"}" \
+              "$SLACK_WEBHOOK_URL"
+          else
+            echo "No alerts found across repos."
+          fi
