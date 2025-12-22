@@ -1,0 +1,21 @@
+name: Review Deploy – Expire (Reusable)
+
+on:
+  workflow_call:
+
+jobs:
+  expire-review-deploy:
+    name: Expire review deployment (reusable)
+    runs-on: ubuntu-latest
+
+    # Run only when PR is closed (merged or not)
+    if: github.event.pull_request.state == 'closed'
+
+    steps:
+      - name: Expire deployment
+        env:
+          API_TOKEN: ${{ secrets.REVIEW_DEPLOY_API_TOKEN }}
+        run: |
+          curl --fail -X POST \
+            "https://review.docupilot-dev.in/api/deployments/${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}/expire/" \
+            -H "Authorization: Bearer ${API_TOKEN}"
