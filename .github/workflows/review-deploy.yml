@@ -1,0 +1,96 @@
+name: Review Deploy (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      deployment_configs_json:
+        description: JSON array for deployment "configs"
+        required: true
+        type: string
+
+      deployment_template_code:
+        description: Deployment template code
+        required: false
+        type: string
+        default: docupilot
+
+jobs:
+  review-deploy:
+    name: Publish image & create review deployment
+    runs-on: ubuntu-latest
+
+    if: >
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'review-deploy' &&
+      github.event.pull_request.draft == false
+
+    steps:
+      - name: Validate JSON
+        run: |
+          echo '${{ inputs.deployment_configs_json }}' | jq . >/dev/null
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Compute image tag
+        id: image-tag
+        run: |
+          echo "IMAGE_TAG=${{ github.event.repository.name }}-${{ github.event.pull_request.number }}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ap-south-2
+
+      - name: Publish image to ECR
+        run: |
+          REGION="ap-south-2"
+          DOCKER_REPO="603414745100.dkr.ecr.$REGION.amazonaws.com"
+          PROJECT_NAME="${{ github.event.repository.name }}"
+          IMAGE_TAG=${{ steps.image-tag.outputs.IMAGE_TAG }}
+          IMAGE_URI="$DOCKER_REPO/$PROJECT_NAME:$IMAGE_TAG"
+
+          echo "publishing as $IMAGE_URI"
+          aws ecr get-login-password --region $REGION | docker login --username AWS --password-stdin $DOCKER_REPO
+
+          docker buildx inspect multiarch-builder >/dev/null 2>&1 \
+            || docker buildx create --name multiarch-builder --use
+
+          docker buildx build \
+            --platform linux/arm64 \
+            -t "$IMAGE_URI" \
+            --push \
+            .
+
+      - name: Create review deployment
+        env:
+          API_TOKEN: ${{ secrets.REVIEW_DEPLOY_API_TOKEN }}
+        run: |
+          jq -n \
+            --arg version "${GITHUB_SHA::7}" \
+            --arg template "${{ inputs.deployment_template_code }}" \
+            --argjson configs '${{ inputs.deployment_configs_json }}' \
+            '{
+              version: $version,
+              deployment_template_code: $template,
+              configs: $configs
+            }' > payload.json
+
+          curl --fail -X POST \
+            "https://review.docupilot-dev.in/api/deployments/accounts-pr${{ github.event.pull_request.number }}/versions/" \
+            -H "Authorization: Bearer ${API_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data @payload.json
+
+      - name: Comment deployment URL on PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 Review deployment created: https://review.docupilot-dev.in/#/deployments/pr${context.issue.number}`
+            })
