@@ -79,7 +79,7 @@ jobs:
             }' > payload.json
 
           curl --fail -X POST \
-            "https://review.docupilot-dev.in/api/deployments/accounts-pr${{ github.event.pull_request.number }}/versions/" \
+            "https://review.docupilot-dev.in/api/deployments/${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}/versions/" \
             -H "Authorization: Bearer ${API_TOKEN}" \
             -H "Content-Type: application/json" \
             --data @payload.json
