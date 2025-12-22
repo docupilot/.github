@@ -1,0 +1,53 @@
+name: Publish Docker Image (latest) on Release
+
+on:
+  workflow_call:
+
+jobs:
+  publish-latest:
+    name: Publish image with latest tag
+    runs-on: ubuntu-latest
+
+    # Ensure:
+    # - Triggered by a release
+    # - Release is created from main branch
+    if: >
+      github.event_name == 'release' &&
+      github.event.release.target_commitish == 'main'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+          aws-region: ap-south-2
+
+      - name: Publish image to ECR (latest)
+        run: |
+          set -euo pipefail
+
+          REGION="ap-south-2"
+          DOCKER_REPO="603414745100.dkr.ecr.$REGION.amazonaws.com"
+          PROJECT_NAME="${{ github.event.repository.name }}"
+          IMAGE_TAG="latest"
+          IMAGE_URI="$DOCKER_REPO/$PROJECT_NAME:$IMAGE_TAG"
+
+          echo "Publishing image: $IMAGE_URI"
+
+          aws ecr get-login-password --region "$REGION" \
+            | docker login --username AWS --password-stdin "$DOCKER_REPO"
+
+          docker buildx inspect multiarch-builder >/dev/null 2>&1 \
+            || docker buildx create --name multiarch-builder --use
+
+          docker buildx build \
+            --platform linux/arm64 \
+            -t "$IMAGE_URI" \
+            --push \
+            .
+
+          echo "Published: $IMAGE_URI"
