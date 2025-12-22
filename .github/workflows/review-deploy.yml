@@ -68,6 +68,8 @@ jobs:
         env:
           API_TOKEN: ${{ secrets.REVIEW_DEPLOY_API_TOKEN }}
         run: |
+          set -euo pipefail
+
           jq -n \
             --arg version "${GITHUB_SHA::7}" \
             --arg template "${{ inputs.deployment_template_code }}" \
@@ -78,11 +80,28 @@ jobs:
               configs: $configs
             }' > payload.json
 
-          curl --fail -X POST \
-            "https://review.docupilot-dev.in/api/deployments/accounts-pr${{ github.event.pull_request.number }}/versions/" \
+          url="https://review.docupilot-dev.in/api/deployments/${{ github.event.repository.name }}-pr${{ github.event.pull_request.number }}/versions/"
+
+          echo "Creating review deployment via: ${url}"
+
+          response_file="$(mktemp)"
+          http_code="$(curl --silent --show-error --write-out "%{http_code}" \
+            -X POST "${url}" \
             -H "Authorization: Bearer ${API_TOKEN}" \
             -H "Content-Type: application/json" \
-            --data @payload.json
+            --data @payload.json \
+            --output "${response_file}")"
+
+          if [ "${http_code}" -lt 200 ] || [ "${http_code}" -ge 300 ]; then
+            echo "Failed to create review deployment. HTTP status: ${http_code}" >&2
+            echo "Response body:" >&2
+            cat "${response_file}" >&2 || true
+            exit 1
+          fi
+
+          echo "Successfully created review deployment. HTTP status: ${http_code}"
+          echo "Response body:"
+          cat "${response_file}" || true
 
       - name: Comment deployment URL on PR
         uses: actions/github-script@v7
