@@ -25,7 +25,7 @@ jobs:
         id: app-token
         uses: actions/create-github-app-token@v1
         with:
-          app-id: ${{ secrets.LABEL_SYNC_APP_ID }}
+          app-id: ${{ vars.LABEL_SYNC_APP_ID }}
           private-key: ${{ secrets.LABEL_SYNC_APP_PRIVATE_KEY }}
           owner: ${{ inputs.owner }}
 
