@@ -17,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +29,7 @@ jobs:
           REPO_FILTER: ${{ inputs.repo_filter }}
           TARGET_OWNER: ${{ inputs.owner }}
         with:
-          github-token: ${{ secrets.ORG_LABEL_SYNC_TOKEN }}
+          github-token: ${{ secrets.ORG_LABEL_SYNC_TOKEN != '' && secrets.ORG_LABEL_SYNC_TOKEN || github.token }}
           script: |
             const fs = require("fs");
 
