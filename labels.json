@@ -1,0 +1,67 @@
+[
+  {
+    "name": "P0-critical",
+    "description": "Production outage, data loss, urgent fix",
+    "color": "D73A49"
+  },
+  {
+    "name": "P1-high",
+    "description": "User-facing issue or release blocker",
+    "color": "F66A0A"
+  },
+  {
+    "name": "P2-normal",
+    "description": "Default priority",
+    "color": "0366D6"
+  },
+  {
+    "name": "P3-low",
+    "description": "Cleanup, refactor, non-urgent",
+    "color": "6A737D"
+  },
+  {
+    "name": "security-critical",
+    "description": "Exploitable vulnerability / data exposure",
+    "color": "B60205"
+  },
+  {
+    "name": "security-high",
+    "description": "Serious security concern",
+    "color": "E99695"
+  },
+  {
+    "name": "security-review",
+    "description": "Needs security team review",
+    "color": "5319E7"
+  },
+  {
+    "name": "release-blocker",
+    "description": "Must be fixed before release",
+    "color": "FBCA04"
+  },
+  {
+    "name": "hotfix",
+    "description": "Needs immediate patch release",
+    "color": "FF0000"
+  },
+  {
+    "name": "release-improvement",
+    "description": "Nice-to-have before release",
+    "color": "FFD700"
+  },
+  {
+    "name": "risk-high",
+    "description": "Sensitive area (auth, billing, migrations)",
+    "color": "8B0000"
+  },
+  {
+    "name": "risk-medium",
+    "description": "Moderate impact",
+    "color": "FF8C00"
+  },
+  {
+    "name": "risk-low",
+    "description": "Safe, minimal impact",
+    "color": "0E8A16"
+  }
+]

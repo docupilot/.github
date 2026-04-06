@@ -1,0 +1,126 @@
+name: Sync Labels
+
+on:
+  workflow_dispatch:
+    inputs:
+      owner:
+        description: GitHub organization or user that owns the target repositories
+        required: true
+        type: string
+      repo_filter:
+        description: Optional comma-separated list of repo names to limit the sync
+        required: false
+        type: string
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync labels
+        uses: actions/github-script@v7
+        env:
+          LABELS_FILE: labels.json
+          REPO_FILTER: ${{ inputs.repo_filter }}
+          TARGET_OWNER: ${{ inputs.owner }}
+        with:
+          github-token: ${{ secrets.ORG_LABEL_SYNC_TOKEN }}
+          script: |
+            const fs = require("fs");
+
+            const owner = process.env.TARGET_OWNER.trim();
+            const repoFilter = (process.env.REPO_FILTER || "")
+              .split(",")
+              .map((repo) => repo.trim())
+              .filter(Boolean);
+
+            const labels = JSON.parse(fs.readFileSync(process.env.LABELS_FILE, "utf8"));
+
+            if (!owner) {
+              core.setFailed("The owner input is required.");
+              return;
+            }
+
+            if (labels.length === 0) {
+              core.setFailed("labels.json is empty.");
+              return;
+            }
+
+            async function listRepositories() {
+              const repos = await github.paginate(github.rest.repos.listForOrg, {
+                org: owner,
+                per_page: 100,
+                type: "all",
+              }).catch(async (error) => {
+                if (error.status !== 404) {
+                  throw error;
+                }
+
+                return github.paginate(github.rest.repos.listForUser, {
+                  username: owner,
+                  per_page: 100,
+                  type: "owner",
+                });
+              });
+
+              return repos
+                .filter((repo) => !repo.archived && !repo.disabled)
+                .filter((repo) => repoFilter.length === 0 || repoFilter.includes(repo.name));
+            }
+
+            async function syncRepository(repoName) {
+              core.info(`Syncing labels for ${owner}/${repoName}`);
+
+              const existingLabels = await github.paginate(github.rest.issues.listLabelsForRepo, {
+                owner,
+                repo: repoName,
+                per_page: 100,
+              });
+
+              const existingByName = new Map(existingLabels.map((label) => [label.name, label]));
+
+              for (const label of labels) {
+                const current = existingByName.get(label.name);
+
+                if (current) {
+                  await github.rest.issues.updateLabel({
+                    owner,
+                    repo: repoName,
+                    name: current.name,
+                    new_name: label.name,
+                    color: label.color,
+                    description: label.description,
+                  });
+                  core.info(`Updated ${owner}/${repoName} label "${label.name}"`);
+                  continue;
+                }
+
+                await github.rest.issues.createLabel({
+                  owner,
+                  repo: repoName,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description,
+                });
+                core.info(`Created ${owner}/${repoName} label "${label.name}"`);
+              }
+            }
+
+            const repositories = await listRepositories();
+
+            if (repositories.length === 0) {
+              core.notice(`No repositories matched for owner "${owner}".`);
+              return;
+            }
+
+            core.info(`Found ${repositories.length} repositories to sync.`);
+
+            for (const repository of repositories) {
+              await syncRepository(repository.name);
+            }
+
+            core.notice(`Label sync completed for ${repositories.length} repositories.`);
