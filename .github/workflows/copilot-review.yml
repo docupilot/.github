@@ -1,0 +1,33 @@
+name: Copilot Review
+
+on:
+  workflow_call:
+
+permissions:
+  pull-requests: write
+
+jobs:
+  copilot-review:
+    if: contains(github.event.pull_request.labels.*.name, 'copilot-review')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Request Copilot review
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_REVIEW_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR_NUMBER" \
+            --repo "$REPO" \
+            --add-reviewer @copilot
+
+      - name: Remove copilot-review label
+        env:
+          GH_TOKEN: ${{ secrets.COPILOT_REVIEW_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          gh pr edit "$PR_NUMBER" \
+            --repo "$REPO" \
+            --remove-label "copilot-review"
